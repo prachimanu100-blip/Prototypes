@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Steady: daily mood tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#edeff7;--card:#fff;--ink:#1d2142;--mut:#5f6482;--line:#d9dcec;--acc:#4a58d4;--ok:#2a9d83;--warn:#d98a1f;--bad:#d33f49;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#12142a;--card:#1b1e3a;--ink:#eceefb;--mut:#9aa0c6;--line:#2c3059;--acc:#8b97ff;--ok:#4cc7a8;--warn:#f0b050;--bad:#ff6b75}}
+:root[data-theme="dark"]{--bg:#12142a;--card:#1b1e3a;--ink:#eceefb;--mut:#9aa0c6;--line:#2c3059;--acc:#8b97ff;--ok:#4cc7a8;--warn:#f0b050;--bad:#ff6b75}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Figtree,system-ui,sans-serif;line-height:1.45}
+main{max-width:980px;margin:0 auto;padding:20px 16px 48px;display:grid;gap:16px}
+h1{font-size:28px;margin:0;font-weight:800;letter-spacing:-.02em}
+h2{font-size:17px;margin:0 0 10px;font-weight:700}
+.sub{color:var(--mut);margin:2px 0 0;font-size:15px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px}
+.grid{display:grid;gap:16px;grid-template-columns:1fr}
+@media(min-width:800px){.grid{grid-template-columns:1.1fr 1fr}}
+button{font:inherit;cursor:pointer;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:10px;padding:8px 12px;font-weight:500}
+button:hover{border-color:var(--acc)}
+button:focus-visible,textarea:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+button.pri{background:var(--acc);border-color:var(--acc);color:#fff;font-weight:700}
+:root[data-theme="dark"] button.pri,:root:not([data-theme="light"]) button.pri{color:#12142a}
+.top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+#banner{display:none;position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bad);color:#fff;border-radius:14px;padding:14px 16px;animation:flash 1s infinite}
+#banner.on{display:block}
+#banner b{font-size:18px;display:block}
+#banner button{margin:10px 8px 0 0;background:#fff;color:#7a1219;border-color:#fff;font-weight:700}
+@keyframes flash{50%{box-shadow:0 0 0 6px color-mix(in srgb,var(--bad) 35%,transparent)}}
+.stage{display:flex;flex-direction:column;align-items:center;padding:8px 0 4px}
+.orbwrap{width:220px;height:220px;display:grid;place-items:center}
+.orb{width:150px;height:150px;border-radius:50%;--c:var(--ok);background:radial-gradient(circle at 35% 30%,color-mix(in srgb,var(--c) 55%,#fff),var(--c));box-shadow:0 0 50px color-mix(in srgb,var(--c) 45%,transparent);animation:breathe var(--p,4.3s) ease-in-out infinite;transition:background .8s}
+.orb.warn{--c:var(--warn)}.orb.bad{--c:var(--bad)}
+.orb.guide{animation:guide 10s ease-in-out infinite;--c:var(--acc)}
+@keyframes breathe{0%,100%{transform:scale(.72)}50%{transform:scale(1.18)}}
+@keyframes guide{0%{transform:scale(.72)}40%{transform:scale(1.2)}100%{transform:scale(.72)}}
+.state{font-size:22px;font-weight:800;margin-top:6px}
+.vit{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px;width:100%}
+.v{border:1px solid var(--line);border-radius:12px;padding:10px;text-align:center}
+.v b{font-size:26px;display:block;line-height:1.1}
+.v span{font-size:13px;color:var(--mut)}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+.row button[aria-pressed="true"]{background:var(--acc);color:#fff;border-color:var(--acc)}
+:root[data-theme="dark"] .row button[aria-pressed="true"],:root:not([data-theme="light"]) .row button[aria-pressed="true"]{color:#12142a}
+.moods{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.moods button{padding:10px 2px;text-align:center;font-size:13px}
+.moods button span{font-size:26px;display:block}
+.moods button[aria-pressed="true"]{border-color:var(--acc);background:color-mix(in srgb,var(--acc) 16%,var(--card));font-weight:700}
+textarea{width:100%;margin:10px 0;min-height:56px;font:inherit;padding:10px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink);resize:vertical}
+ul{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+li{border-left:4px solid var(--line);padding:4px 10px;font-size:14px}
+li.bad{border-color:var(--bad)}li.warn{border-color:var(--warn)}li.ok{border-color:var(--ok)}
+li small{color:var(--mut);display:block}
+.empty{color:var(--mut);font-size:14px}
+.chart{overflow-x:auto}
+svg text{fill:var(--mut);font-size:11px;font-family:inherit}
+.note{font-size:13px;color:var(--mut)}
+@media(prefers-reduced-motion:reduce){.orb,#banner{animation:none}}
+</style>
+</head>
+<body>
+<main>
+  <div class="top">
+    <div><h1>Steady</h1><p class="sub">Daily mood tracker that raises an alarm when you need a pause.</p></div>
+    <div class="row">
+      <button id="snd" aria-pressed="true">Alarm sound: on</button>
+      <button id="thm">Theme</button>
+    </div>
+  </div>
+
+  <div id="banner" role="alert" aria-live="assertive">
+    <b id="bt"></b><span id="bm"></span><br>
+    <button id="bb">Breathe with me</button><button id="bd">I'm okay, dismiss</button>
+  </div>
+
+  <div class="grid">
+    <section class="card" aria-labelledby="h-live">
+      <h2 id="h-live">Live body signals</h2>
+      <div class="stage">
+        <div class="orbwrap"><div class="orb" id="orb"></div></div>
+        <div class="state" id="state">Calm</div>
+        <div class="sub" id="hint">The orb moves at your breathing rate.</div>
+        <div class="vit">
+          <div class="v"><b id="hr">--</b><span>Pulse (bpm)</span></div>
+          <div class="v"><b id="br">--</b><span>Breaths / min</span></div>
+          <div class="v"><b id="hv">--</b><span>HRV (ms)</span></div>
+        </div>
+      </div>
+      <h2 style="margin-top:16px">Simulate a scenario</h2>
+      <div class="row" id="sc">
+        <button data-s="calm" aria-pressed="true">Calm</button>
+        <button data-s="walk" aria-pressed="false">Walking</button>
+        <button data-s="stress" aria-pressed="false">Stressed</button>
+        <button data-s="angry" aria-pressed="false">Angry</button>
+      </div>
+      <p class="note">Prototype: signals are simulated. A real build would stream pulse and breathing from a watch or chest strap (for example over Bluetooth heart-rate). Not a medical device.</p>
+    </section>
+
+    <section class="card" aria-labelledby="h-chk">
+      <h2 id="h-chk">How are you feeling today?</h2>
+      <div class="moods" id="moods" role="group" aria-label="Mood from 1 to 5">
+        <button data-v="1" aria-pressed="false"><span>😣</span>Awful</button>
+        <button data-v="2" aria-pressed="false"><span>😕</span>Low</button>
+        <button data-v="3" aria-pressed="false"><span>😐</span>Okay</button>
+        <button data-v="4" aria-pressed="false"><span>🙂</span>Good</button>
+        <button data-v="5" aria-pressed="false"><span>😄</span>Great</button>
+      </div>
+      <label for="nt" class="sr" style="position:absolute;left:-9999px">Note</label>
+      <textarea id="nt" placeholder="What's on your mind? (optional)"></textarea>
+      <button class="pri" id="save">Save check-in</button>
+      <p class="note">An alarm sounds if your mood drops 2+ points, or falls three check-ins in a row.</p>
+      <h2 style="margin-top:16px">Recent check-ins</h2>
+      <ul id="ent"></ul>
+    </section>
+  </div>
+
+  <div class="grid">
+    <section class="card" aria-labelledby="h-tr">
+      <h2 id="h-tr">Mood trend</h2>
+      <div class="chart" id="chart"></div>
+    </section>
+    <section class="card" aria-labelledby="h-al">
+      <h2 id="h-al">Alarm history</h2>
+      <ul id="log"><li class="empty" style="border:0">No alarms yet. Try the Angry scenario.</li></ul>
+    </section>
+  </div>
+</main>
+
+<script>
+const $=s=>document.querySelector(s);
+const BASE={hr:68,br:14,hv:55};
+const SC={calm:{hr:66,br:13,hv:62},walk:{hr:84,br:17,hv:50},stress:{hr:90,br:21,hv:32},angry:{hr:112,br:26,hv:20}};
+const LAB=['','Awful','Low','Okay','Good','Great'];
+let target=SC.calm,cur={...SC.calm},sound=true,hi=0,mid=0,cool=0,level=0,guideT=null,actx=null,pick=0,entries=[],alerts=[];
+
+/* storage (private to this viewer) */
+function load(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}}
+function save(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+const DAY=864e5;
+entries=load('steady.entries',null);
+if(!entries){const v=[4,4,5,4,3,3];entries=v.map((x,i)=>({t:Date.now()-(6-i)*DAY,v:x,note:i==5?'Busy week, slept badly.':''}));}
+alerts=load('steady.alerts',[]);
+
+/* alarm */
+function beep(){
+  if(!sound)return;
+  try{actx=actx||new (window.AudioContext||window.webkitAudioContext)();
+  [0,.35,.7].forEach(d=>{const o=actx.createOscillator(),g=actx.createGain();o.type='square';o.frequency.value=d==.35?660:880;g.gain.value=.08;o.connect(g);g.connect(actx.destination);o.start(actx.currentTime+d);o.stop(actx.currentTime+d+.25)})}catch(e){}
+  try{navigator.vibrate&&navigator.vibrate([300,150,300,150,300])}catch(e){}
+}
+function alarm(kind,title,msg){
+  $('#bt').textContent=title;$('#bm').textContent=msg;$('#banner').classList.add('on');beep();
+  alerts.unshift({t:Date.now(),kind,title,msg});alerts=alerts.slice(0,20);save('steady.alerts',alerts);drawLog();
+}
+function dismiss(){$('#banner').classList.remove('on');stopGuide();cool=30}
+
+/* guided breathing 4s in / 6s out */
+function startGuide(){
+  const o=$('#orb');o.classList.add('guide');$('#bb').textContent='Stop guide';
+  const t0=Date.now();clearInterval(guideT);
+  guideT=setInterval(()=>{const s=((Date.now()-t0)/1000)%10;$('#hint').textContent=s<4?'Breathe in through your nose…':'Slowly breathe out…';if(Date.now()-t0>90000)stopGuide()},250);
+}
+function stopGuide(){clearInterval(guideT);guideT=null;$('#orb').classList.remove('guide');$('#bb').textContent='Breathe with me';$('#hint').textContent='The orb moves at your breathing rate.'}
+
+/* simulated sensor loop */
+const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+function arousal(){
+  const a=clamp((cur.hr-BASE.hr)/30,0,1.5),b=clamp((cur.br-BASE.br)/10,0,1.5),c=clamp((BASE.hv-cur.hv)/35,0,1.5);
+  return (a+b+c)/3;
+}
+function tick(){
+  for(const k in cur){cur[k]+=(target[k]-cur[k])*.25+(Math.random()-.5)*(k=='hr'?3:k=='br'?1:3)}
+  const a=arousal();
+  hi=a>=.85?hi+1:0; mid=a>=.5?mid+1:0; if(cool>0)cool--;
+  let st='Calm',cls='';
+  if(a>=.85){st='Anger detected';cls='bad'}else if(a>=.5){st='Tension rising';cls='warn'}
+  $('#state').textContent=st;$('#orb').className='orb '+cls+($('#orb').classList.contains('guide')?' guide':'');
+  $('#hr').textContent=Math.round(cur.hr);$('#br').textContent=Math.round(cur.br);$('#hv').textContent=Math.round(cur.hv);
+  if(!guideT)$('#orb').style.setProperty('--p',(60/cur.br).toFixed(2)+'s');
+  if(cool==0){
+    if(hi>=4&&level<2){level=2;alarm('bad','Anger detected','Pulse '+Math.round(cur.hr)+' bpm and breathing '+Math.round(cur.br)+'/min are well above your baseline. Pause and take a slow breath.')}
+    else if(mid>=8&&level<1){level=1;alarm('warn','Tension is building','Your pulse and breathing have been elevated for a while. A short break may help.')}
+  }
+  if(a<.4)level=0;
+}
+setInterval(tick,1000);tick();
+
+/* scenarios */
+$('#sc').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
+  target=SC[b.dataset.s];document.querySelectorAll('#sc button').forEach(x=>x.setAttribute('aria-pressed',x===b));
+  if(b.dataset.s=='calm'||b.dataset.s=='walk')cool=0;});
+
+/* mood check-in */
+$('#moods').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;pick=+b.dataset.v;
+  document.querySelectorAll('#moods button').forEach(x=>x.setAttribute('aria-pressed',x===b))});
+$('#save').addEventListener('click',()=>{
+  if(!pick){$('#hint').textContent='Pick a mood first.';return}
+  const prev=entries[entries.length-1];
+  entries.push({t:Date.now(),v:pick,note:$('#nt').value.trim()});save('steady.entries',entries);
+  const n=entries.length,l=entries.slice(-3).map(x=>x.v);
+  if(prev&&pick-prev.v<=-2)alarm('bad','Your mood dropped','From '+LAB[prev.v]+' to '+LAB[pick]+'. Consider a break, a walk, or talking to someone you trust.');
+  else if(n>=3&&l[0]>l[1]&&l[1]>l[2])alarm('warn','Mood has fallen three check-ins in a row','Small resets help: water, fresh air, a short walk.');
+  $('#nt').value='';pick=0;document.querySelectorAll('#moods button').forEach(x=>x.setAttribute('aria-pressed','false'));
+  drawEntries();drawChart();
+});
+
+/* buttons */
+$('#bd').onclick=dismiss;
+$('#bb').onclick=()=>guideT?stopGuide():startGuide();
+$('#snd').onclick=e=>{sound=!sound;e.target.setAttribute('aria-pressed',sound);e.target.textContent='Alarm sound: '+(sound?'on':'off');if(sound)beep()};
+$('#thm').onclick=()=>{const r=document.documentElement,d=r.dataset.theme?r.dataset.theme=='dark':matchMedia('(prefers-color-scheme:dark)').matches;r.dataset.theme=d?'light':'dark'};
+
+/* rendering */
+const fmt=t=>new Date(t).toLocaleDateString(undefined,{weekday:'short',day:'numeric',month:'short'});
+function drawEntries(){
+  const ul=$('#ent');ul.innerHTML='';
+  entries.slice(-5).reverse().forEach(e=>{const li=document.createElement('li');li.className=e.v>=4?'ok':e.v==3?'warn':'bad';
+    li.textContent=LAB[e.v]+' ('+e.v+'/5)';const s=document.createElement('small');s.textContent=fmt(e.t)+(e.note?' · '+e.note:'');li.appendChild(s);ul.appendChild(li)});
+}
+function drawLog(){
+  const ul=$('#log');if(!alerts.length)return;ul.innerHTML='';
+  alerts.forEach(a=>{const li=document.createElement('li');li.className=a.kind;li.textContent=a.title;
+    const s=document.createElement('small');s.textContent=new Date(a.t).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})+' · '+a.msg;li.appendChild(s);ul.appendChild(li)});
+}
+function drawChart(){
+  const d=entries.slice(-10),W=Math.max(420,d.length*64),H=190,L=34,R=16,T=14,B=30;
+  const x=i=>L+(d.length==1?0:i*(W-L-R)/(d.length-1)),y=v=>T+(5-v)*(H-T-B)/4;
+  let s='<svg width="'+W+'" height="'+H+'" role="img" aria-label="Mood over time">';
+  for(let v=1;v<=5;v++)s+='<line x1="'+L+'" x2="'+(W-R)+'" y1="'+y(v)+'" y2="'+y(v)+'" stroke="var(--line)"/><text x="8" y="'+(y(v)+4)+'">'+v+'</text>';
+  s+='<polyline fill="none" stroke="var(--acc)" stroke-width="2.5" points="'+d.map((e,i)=>x(i)+','+y(e.v)).join(' ')+'"/>';
+  d.forEach((e,i)=>{const c=e.v>=4?'var(--ok)':e.v==3?'var(--warn)':'var(--bad)';
+    s+='<circle cx="'+x(i)+'" cy="'+y(e.v)+'" r="5" fill="'+c+'"/><text x="'+(x(i)-14)+'" y="'+(H-10)+'">'+new Date(e.t).toLocaleDateString(undefined,{weekday:'short'})+'</text>'});
+  $('#chart').innerHTML=s+'</svg>';
+}
+drawEntries();drawChart();drawLog();
+document.addEventListener('pointerdown',()=>{try{actx=actx||new (window.AudioContext||window.webkitAudioContext)()}catch(e){}},{once:true});
+</script>
+</body>
+</html>
