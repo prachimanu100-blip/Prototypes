@@ -1,0 +1,7 @@
+streamlit>=1.50
+langgraph>=0.2
+langchain-anthropic>=0.3   # optional: only needed for the LLM-written report
+pandas>=2.0
+numpy
+python-dotenv
+pytest
